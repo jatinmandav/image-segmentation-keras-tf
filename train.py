@@ -1,9 +1,11 @@
+import os
+os.environ['VISIBLE_CUDA_DEVICES'] = "3"
 import argparse
 import Models, LoadBatches
 from keras import optimizers
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--save_weights_path", type = str)
+parser.add_argument("--save_weights_path", type = str, default="weights")
 parser.add_argument("--train_images", type = str)
 parser.add_argument("--train_annotations", type = str)
 parser.add_argument("--n_classes", type=int)
@@ -69,6 +71,7 @@ m.compile(loss='categorical_crossentropy',
 if len(load_weights) > 0:
 	m.load_weights(load_weights)
 
+m.summary()
 print("Model output shape",  m.output_shape)
 
 output_height = m.outputHeight
@@ -89,9 +92,9 @@ if not validate:
 	for ep in range(epochs):
 		m.fit_generator(G, 512, epochs=epochs, callbacks=[logging, checkpoint])
 		#m.save_weights(save_weights_path + "." + str(ep))
-		m.save(os.path.join(log_dir, "final.model")
+		m.save(os.path.join(log_dir, "final.model"))
 else:
 	for ep in range(epochs):
-		m.fit_generator(G, 512, validation_data=G2, validation_steps=200, epochs=epochs, , callbacks=[logging, checkpoint])
+		m.fit_generator(G, 512, validation_data=G2, validation_steps=200, epochs=epochs, callbacks=[logging, checkpoint])
 		m.save_weights(save_weights_path + "." + str(ep))
 		m.save(save_weights_path + ".model." + str(ep))
