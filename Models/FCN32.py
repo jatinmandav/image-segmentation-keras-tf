@@ -11,9 +11,9 @@ from keras.layers import *
 import os
 file_path = os.path.dirname( os.path.abspath(__file__) )
 
-VGG_Weights_path = file_path+"/../data/vgg16_weights_th_dim_ordering_th_kernels.h5"
+VGG_Weights_path = file_path+"/../data/vgg16_weights_tf_dim_ordering_tf_kernels.h5"
 
-IMAGE_ORDERING = 'channels_first'
+IMAGE_ORDERING = 'channels_last'
 
 
 def FCN32( n_classes ,  input_height=416, input_width=608 , vgg_level=3):
@@ -22,7 +22,7 @@ def FCN32( n_classes ,  input_height=416, input_width=608 , vgg_level=3):
 	assert input_width%32 == 0
 
 	# https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg16_weights_th_dim_ordering_th_kernels.h5
-	img_input = Input(shape=(3,input_height,input_width))
+	img_input = Input(shape=(input_height,input_width, 3))
 
 	x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', data_format=IMAGE_ORDERING )(img_input)
 	x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2', data_format=IMAGE_ORDERING )(x)
@@ -60,26 +60,26 @@ def FCN32( n_classes ,  input_height=416, input_width=608 , vgg_level=3):
 	x = Dense(4096, activation='relu', name='fc2')(x)
 	x = Dense( 1000 , activation='softmax', name='predictions')(x)
 
-	vgg  = Model(  img_input , x  )
+	vgg  = Model(img_input, x)
 	vgg.load_weights(VGG_Weights_path)
 
 	o = f5
 
-	o = ( Conv2D( 4096 , ( 7 , 7 ) , activation='relu' , padding='same', data_format=IMAGE_ORDERING))(o)
+	o = (Conv2D(4096, (7, 7), activation='relu', padding='same', data_format=IMAGE_ORDERING))(o)
 	o = Dropout(0.5)(o)
-	o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same', data_format=IMAGE_ORDERING))(o)
+	o = (Conv2D(4096, (1, 1), activation='relu', padding='same', data_format=IMAGE_ORDERING))(o)
 	o = Dropout(0.5)(o)
 
-	o = ( Conv2D( n_classes ,  ( 1 , 1 ) ,kernel_initializer='he_normal' , data_format=IMAGE_ORDERING))(o)
-	o = Conv2DTranspose( n_classes , kernel_size=(64,64) ,  strides=(32,32) , use_bias=False ,  data_format=IMAGE_ORDERING )(o)
-	o_shape = Model(img_input , o ).output_shape
+	o = (Conv2D(n_classes, (1, 1), kernel_initializer='he_normal', data_format=IMAGE_ORDERING))(o)
+	o = Conv2DTranspose(n_classes, kernel_size=(64,64), strides=(32, 32), use_bias=False, data_format=IMAGE_ORDERING)(o)
+	o_shape = Model(img_input, o).output_shape
 
-	outputHeight = o_shape[2]
-	outputWidth = o_shape[3]
+	outputHeight = o_shape[1]
+	outputWidth = o_shape[2]
 
 	print("koko" , o_shape)
 
-	o = (Reshape(( -1  , outputHeight*outputWidth   )))(o)
+	o = (Reshape((-1, outputHeight*outputWidth)))(o)
 	o = (Permute((2, 1)))(o)
 	o = (Activation('softmax'))(o)
 	model = Model( img_input , o )
