@@ -1,5 +1,6 @@
 import argparse
 import Models, LoadBatches
+from keras import optimizers
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save_weights_path", type = str)
@@ -47,8 +48,22 @@ modelFns = {'vgg_segnet':Models.VGGSegnet.VGGSegnet, 'vgg_unet':Models.VGGUnet.V
 modelFN = modelFns[model_name]
 
 m = modelFN(n_classes, input_height=input_height, input_width=input_width)
+
+if optimizer_name == 'sgd':
+	optimizer = optimizers.SGD(lr=0.001, momentum=0.9)
+elif optimizer_name == "rmsprop":
+	optimizer = optimizers.RMSProp(lr=0.001)
+elif optimizer_name == 'adagrad':
+	optimizer = optimizers.Adagrad()
+elif optimizer_name == 'adadelta':
+	optimizer = optimizers.Adadelta()
+else:
+	print('Not recognized, using ADAM optimizer')
+	optimizer = optimizers.Adam(lr=0.001)
+
+
 m.compile(loss='categorical_crossentropy',
-      optimizer= optimizer_name,
+      optimizer= optimizer,
       metrics=['accuracy'])
 
 if len(load_weights) > 0:
@@ -59,6 +74,12 @@ print("Model output shape",  m.output_shape)
 output_height = m.outputHeight
 output_width = m.outputWidth
 
+log_dir = "logs_{}".format(model_name)
+
+logging = TensorBoard(log_dir=log_dir)
+checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
+        monitor='loss', save_weights_only=True, save_best_only=True, period=3)
+
 G = LoadBatches.imageSegmentationGenerator(train_images_path, train_segs_path, train_batch_size, n_classes, input_height, input_width, output_height, output_width)
 
 if validate:
@@ -66,11 +87,11 @@ if validate:
 
 if not validate:
 	for ep in range(epochs):
-		m.fit_generator(G, 512, epochs=epochs)
-		m.save_weights(save_weights_path + "." + str(ep))
-		m.save(save_weights_path + ".model." + str(ep))
+		m.fit_generator(G, 512, epochs=epochs, callbacks=[logging, checkpoint])
+		#m.save_weights(save_weights_path + "." + str(ep))
+		m.save(os.path.join(log_dir, "final.model")
 else:
 	for ep in range(epochs):
-		m.fit_generator(G, 512, validation_data=G2, validation_steps=200, epochs=epochs)
+		m.fit_generator(G, 512, validation_data=G2, validation_steps=200, epochs=epochs, , callbacks=[logging, checkpoint])
 		m.save_weights(save_weights_path + "." + str(ep))
 		m.save(save_weights_path + ".model." + str(ep))
