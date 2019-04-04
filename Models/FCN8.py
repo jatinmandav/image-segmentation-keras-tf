@@ -33,7 +33,7 @@ def crop(o1, o2, i):
 
 	return o1, o2
 
-def FCN8(nClasses, input_height=416, input_width=608, vgg_level=3):
+def FCN8(nClasses, input_height=224, input_width=224, vgg_level=3):
 
 	# assert input_height%32 == 0
 	# assert input_width%32 == 0
@@ -119,9 +119,7 @@ def FCN8(nClasses, input_height=416, input_width=608, vgg_level=3):
 
 	return model
 
-
-
 if __name__ == '__main__':
-	m = FCN8(101)
+	m = FCN8(10)
 	from keras.utils import plot_model
-	plot_model(m, show_shapes=True, to_file='model.png')
+	plot_model(m, show_shapes=True, to_file='fcn8_model.png')

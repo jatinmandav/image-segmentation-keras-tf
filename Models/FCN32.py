@@ -1,12 +1,7 @@
-
 # https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/models/fcn32s.py
 # fc weights into the 1x1 convs  , get_upsampling_weight
-
-
-
 from keras.models import *
 from keras.layers import *
-
 
 import os
 file_path = os.path.dirname( os.path.abspath(__file__) )
@@ -16,7 +11,7 @@ VGG_Weights_path = file_path+"/../data/vgg16_weights_tf_dim_ordering_tf_kernels.
 IMAGE_ORDERING = 'channels_last'
 
 
-def FCN32( n_classes ,  input_height=416, input_width=608 , vgg_level=3):
+def FCN32( n_classes ,  input_height=224, input_width=224 , vgg_level=3):
 
 	assert input_height%32 == 0
 	assert input_width%32 == 0
@@ -90,6 +85,6 @@ def FCN32( n_classes ,  input_height=416, input_width=608 , vgg_level=3):
 
 
 if __name__ == '__main__':
-	m = FCN32( 101 )
+	m = FCN32(10)
 	from keras.utils import plot_model
-	plot_model( m , show_shapes=True , to_file='model.png')
+	plot_model( m , show_shapes=True , to_file='fcn32_model.png')

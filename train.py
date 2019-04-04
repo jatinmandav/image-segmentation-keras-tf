@@ -1,8 +1,50 @@
 import os
-os.environ['VISIBLE_CUDA_DEVICES'] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import argparse
 import Models, LoadBatches
 from keras import optimizers
+from keras.callbacks import TensorBoard, ModelCheckpoint
+
+import os
+import tensorflow as tf
+from keras.callbacks import TensorBoard
+
+class TrainValTensorBoard(TensorBoard):
+    def __init__(self, log_dir='./logs', **kwargs):
+        # Make the original `TensorBoard` log to a subdirectory 'training'
+        training_log_dir = os.path.join(log_dir, 'training')
+        super(TrainValTensorBoard, self).__init__(training_log_dir, **kwargs)
+
+        # Log the validation metrics to a separate subdirectory
+        self.val_log_dir = os.path.join(log_dir, 'validation')
+
+    def set_model(self, model):
+        # Setup writer for validation metrics
+        self.val_writer = tf.summary.FileWriter(self.val_log_dir)
+        super(TrainValTensorBoard, self).set_model(model)
+
+    def on_epoch_end(self, epoch, logs=None):
+        # Pop the validation logs and handle them separately with
+        # `self.val_writer`. Also rename the keys so that they can
+        # be plotted on the same figure with the training metrics
+        logs = logs or {}
+        val_logs = {k.replace('val_', ''): v for k, v in logs.items() if k.startswith('val_')}
+        for name, value in val_logs.items():
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            summary_value.simple_value = value.item()
+            summary_value.tag = name
+            self.val_writer.add_summary(summary, epoch)
+        self.val_writer.flush()
+
+        # Pass the remaining logs to `TensorBoard.on_epoch_end`
+        logs = {k: v for k, v in logs.items() if not k.startswith('val_')}
+        super(TrainValTensorBoard, self).on_epoch_end(epoch, logs)
+
+    def on_train_end(self, logs=None):
+        super(TrainValTensorBoard, self).on_train_end(logs)
+        self.val_writer.close()
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--save_weights_path", type = str, default="weights")
@@ -77,10 +119,16 @@ print("Model output shape",  m.output_shape)
 output_height = m.outputHeight
 output_width = m.outputWidth
 
-log_dir = "logs_{}".format(model_name)
+if not os.path.exists("logs_{}".format(model_name)):
+	os.mkdir("logs_{}".format(model_name))
 
-logging = TensorBoard(log_dir=log_dir)
-checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
+log_dir = "logs_{}/{}".format(model_name, optimizer_name)
+
+if not os.path.exists(log_dir):
+	os.mkdir(log_dir)
+
+logging = TrainValTensorBoard(log_dir=log_dir)
+checkpoint = ModelCheckpoint(log_dir + '/ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='loss', save_weights_only=True, save_best_only=True, period=3)
 
 G = LoadBatches.imageSegmentationGenerator(train_images_path, train_segs_path, train_batch_size, n_classes, input_height, input_width, output_height, output_width)
@@ -88,13 +136,6 @@ G = LoadBatches.imageSegmentationGenerator(train_images_path, train_segs_path, t
 if validate:
 	G2 = LoadBatches.imageSegmentationGenerator(val_images_path, val_segs_path, val_batch_size, n_classes, input_height, input_width, output_height, output_width)
 
-if not validate:
-	for ep in range(epochs):
-		m.fit_generator(G, 512, epochs=epochs, callbacks=[logging, checkpoint])
-		#m.save_weights(save_weights_path + "." + str(ep))
-		m.save(os.path.join(log_dir, "final.model"))
-else:
-	for ep in range(epochs):
-		m.fit_generator(G, 512, validation_data=G2, validation_steps=200, epochs=epochs, callbacks=[logging, checkpoint])
-		m.save_weights(save_weights_path + "." + str(ep))
-		m.save(save_weights_path + ".model." + str(ep))
+m.fit_generator(G, int(len(os.listdir(train_images_path))/train_batch_size), validation_data=G2, validation_steps=int(len(os.listdir(val_images_path))/val_batch_size), epochs=epochs, callbacks=[logging])
+#m.save_weights(os.path.join(log_dir, "final_weights.model"))
+#m.save(os.path.join(log_dir, "final.model"))
