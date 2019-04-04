@@ -1,0 +1,5 @@
+python3 predict.py --test_images=data/dataset1/images_prepped_test/ --output_path=data/predictions/vgg_segnet --n_classes=10 --model_name=vgg_segnet --weights=weights/weights_vgg_segnet/ep015-loss0.826-val_loss1.281.h5
+python3 predict.py --test_images=data/dataset1/images_prepped_test/ --output_path=data/predictions/vgg_unet --n_classes=10 --model_name=vgg_unet --weights=weights/weights_vgg_unet/ep015-loss0.773-val_loss1.082.h5
+python3 predict.py --test_images=data/dataset1/images_prepped_test/ --output_path=data/predictions/vgg_unet2 --n_classes=10 --model_name=vgg_unet2 --weights=weights/weights_vgg_unet2/ep015-loss0.703-val_loss1.042.h5
+python3 predict.py --test_images=data/dataset1/images_prepped_test/ --output_path=data/predictions/fcn8 --n_classes=10 --model_name=fcn8 --weights=weights/weights_fcn8/ep003-loss0.903-val_loss1.114.h5
+python3 predict.py --test_images=data/dataset1/images_prepped_test/ --output_path=data/predictions/fcn32 --n_classes=10 --model_name=fcn32 --weights=weights/weights_fcn32/ep021-loss0.632-val_loss0.604.h5

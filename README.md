@@ -17,6 +17,14 @@ Implememnation of various Deep Image Segmentation models in keras.
 * U-Net
 * VGG U-Net
 
+Accuracy Comparison of all models
+
+<p align="center">
+  <img src="acc-comparison.png" width="50%" >
+</p>
+
+You can find trained weights and TensorBoard logs under "Releases" section of the Repo.
+
 ## Getting Started
 
 ### Prerequisites
