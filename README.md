@@ -1,7 +1,8 @@
 # Image Segmentation Keras : Implementation of Segnet, FCN, UNet and other models in Keras.
 
-Implememnation of various Deep Image Segmentation models in keras.
+This repo is the TensorFlow backend based adaptation of [image-segmentation-keras](https://github.com/divamgupta/image-segmentation-keras) in Python3 version.
 
+Implememnation of various Deep Image Segmentation models in keras.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sunshineatnoon/Paper-Collection/master/images/FCN1.png" width="50%" >
@@ -34,7 +35,7 @@ sudo pip install --upgrade keras
 
 You need to make two folders
 
-*  Images Folder - For all the training images
+* Images Folder - For all the training images
 * Annotations Folder - For the corresponding ground truth segmentation images
 
 The filenames of the annotation images should be same as the filenames of the RGB images.
@@ -108,6 +109,10 @@ python3  train.py \
 ```
 
 Choose model_name from vgg_segnet  vgg_unet, vgg_unet2, fcn8, fcn32
+
+or
+
+Modify `train_all_model.sh` bash script to train all the models one-by-one.
 
 ## Getting the predictions
 

@@ -1,9 +1,9 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import argparse
 import Models, LoadBatches
 from keras import optimizers
-from keras.callbacks import TensorBoard, ModelCheckpoint
+from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 
 import os
 import tensorflow as tf
@@ -127,15 +127,30 @@ log_dir = "logs_{}/{}".format(model_name, optimizer_name)
 if not os.path.exists(log_dir):
 	os.mkdir(log_dir)
 
+
+if not os.path.exists("weights_{}".format(model_name)):
+	os.mkdir("weights_{}".format(model_name))
+
+weights_dir = "weights_{}/{}".format(model_name, optimizer_name)
+
+if not os.path.exists(weights_dir):
+	os.mkdir(weights_dir)
+
 logging = TrainValTensorBoard(log_dir=log_dir)
-checkpoint = ModelCheckpoint(log_dir + '/ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
+checkpoint = ModelCheckpoint(weights_dir + '/ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='loss', save_weights_only=True, save_best_only=True, period=3)
+earlystopper = EarlyStopping(monitor='val_loss',
+                              min_delta=0,
+                              patience=5,
+                              verbose=1, mode='auto')
 
 G = LoadBatches.imageSegmentationGenerator(train_images_path, train_segs_path, train_batch_size, n_classes, input_height, input_width, output_height, output_width)
 
 if validate:
 	G2 = LoadBatches.imageSegmentationGenerator(val_images_path, val_segs_path, val_batch_size, n_classes, input_height, input_width, output_height, output_width)
 
-m.fit_generator(G, int(len(os.listdir(train_images_path))/train_batch_size), validation_data=G2, validation_steps=int(len(os.listdir(val_images_path))/val_batch_size), epochs=epochs, callbacks=[logging])
-#m.save_weights(os.path.join(log_dir, "final_weights.model"))
-#m.save(os.path.join(log_dir, "final.model"))
+m.fit_generator(G, int(len(os.listdir(train_images_path))/train_batch_size), validation_data=G2,
+                validation_steps=int(len(os.listdir(val_images_path))/val_batch_size), epochs=epochs, callbacks=[logging, checkpoint, earlystopper])
+
+m.save_weights(os.path.join(weights_dir, "final_weights.model"))
+m.save(os.path.join(weights_dir, "final.model"))
